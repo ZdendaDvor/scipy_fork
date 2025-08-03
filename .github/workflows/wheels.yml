@@ -20,6 +20,7 @@ on:
   push:
     branches:
       - maintenance/**
+      - scipy-nofftcache
   pull_request:
     branches:
       - main
@@ -62,11 +63,6 @@ jobs:
     name: Wheel, ${{ matrix.python[0] }}-${{ matrix.buildplat[1] }}
       ${{ matrix.buildplat[2] }} ${{ matrix.buildplat[3] }}
       ${{ matrix.buildplat[4] }}
-    needs: get_commit_message
-    if: >-
-      contains(needs.get_commit_message.outputs.message, '1') ||
-      github.event_name == 'schedule' ||
-      github.event_name == 'workflow_dispatch'
     runs-on: ${{ matrix.buildplat[0] }}
 
     strategy:
@@ -81,21 +77,18 @@ jobs:
         # so easier to separate out here.
         - [ubuntu-22.04, manylinux, x86_64, "", ""]
         - [ubuntu-22.04, musllinux, x86_64, "", ""]
-        - [ubuntu-24.04-arm, manylinux, aarch64, "", ""]
-        - [ubuntu-24.04-arm, musllinux, aarch64, "", ""]
-        - [macos-13, macosx, x86_64, openblas, "10.14"]
-        - [macos-13, macosx, x86_64, accelerate, "14.0"]
-        - [macos-14, macosx, arm64, openblas, "12.3"]
-        - [macos-14, macosx, arm64, accelerate, "14.0"]
+        - [ubuntu-24.04, manylinux, x86_64, "", ""]
+        - [ubuntu-24.04, musllinux, x86_64, "", ""]     
         - [windows-2022, win, AMD64, "", ""]
-        python: [["cp311", "3.11"], ["cp312", "3.12"], ["cp313", "3.13"], ["cp313t", "3.13"], ["cp314", "cp314"], ["cp314t", "cp314"]]
+        - [windows-2025, win, AMD64, "", ""]        
+        python: [["cp312", "3.12"], ["cp313", "3.13"], ["cp314", "cp314"]]
         # python[0] is used to specify the python versions made by cibuildwheel
 
     env:
       IS_32_BIT: ${{ matrix.buildplat[2] == 'x86' }}
       # upload to staging if it's a push to a maintenance branch and the last
       # commit message contains '[wheel build]'
-      IS_PUSH: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/maintenance') && contains(needs.get_commit_message.outputs.message, '1') }}
+      IS_PUSH: ${{ github.event_name == 'push' }}
       IS_SCHEDULE_DISPATCH: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
 
     steps:
